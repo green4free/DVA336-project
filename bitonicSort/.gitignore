@@ -6,6 +6,12 @@
 *.drc
 *.ll
 *.lso
+fuse.*
+isim*
+*.wdb
+*.ini
+*.cmd
+*.exe
 *.msd
 *.msk
 *.ncd

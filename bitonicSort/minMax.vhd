@@ -24,19 +24,13 @@ begin
 		comp <= (A - B);
 	end generate min;
 
-	upDown: process (A, B)
-	begin
-		if comp(7) = '1' then
-			nA <= A;
-			nB <= B;
-		else
-			nA <= B;
-			nB <= A;
-		end if;
-	end process upDown;
-	
 
-
+	nA <=
+		A when comp(7) = '1' else
+		B;
+	nB <= 
+		B when comp(7) = '1' else
+		A;
 	
 	
 end Behavioral;

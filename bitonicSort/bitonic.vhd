@@ -25,7 +25,7 @@ use work.types.all;
 
 entity bitonicSort is
 	generic(
-		logN: integer := 4
+		logN: integer := 3
 	);
 	
 	port (
@@ -64,18 +64,25 @@ begin
 	
 	l1: for i in 0 to logN - 1 generate
 		l2: for j in 0 to i generate
-			l3: for b in 0 to (2**(logN - i - 1)) - 1 generate
-				directionBlock:for k in 1 to 2 ** i generate
-					
+		
+			blueGreenBlock: for b in 0 to (2**(logN - i - 1)) - 1 generate
+				--Start of bg block b * (2 ** (i + 1) )
+				redBlock:for m in 0 to (2**j) - 1 generate 
+					--Start of r block b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1) )
+					arrow:for n in 0 to 2**(i - j) - 1 generate
+						--Sart of arrow b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1) + n
+						--Length of arrow 2 ** (i - j)
 						swap: minMax generic map(dir => (b mod 2 /= 0) )
-									 port map(A => network((i * (i+1)) / 2 + j) (k),
-												 B => network((i * (i+1)) / 2 + j) (k + 2**(i-j)),
-												nA => network((i * (i+1)) / 2 + j + 1) (k),
-												nB => network((i * (i+1)) / 2 + j + 1) (k + 2**(i-j))
+									 port map(A => network((i * (i+1)) / 2 + j) (b * (2 ** (i + 1)) + m * (2 ** (i - j + 1)) + n ),
+												 B => network((i * (i+1)) / 2 + j) ((b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1)) + n) + 2**(i-j)),
+												nA => network((i * (i+1)) / 2 + j + 1) (b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1)) + n ),
+												nB => network((i * (i+1)) / 2 + j + 1) ((b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1)) + n) + 2**(i-j))
 											 );
-				end generate directionBlock;
+					end generate arrow;
+				end generate redBlock;
 				
-			end generate l3;
+			end generate blueGreenBlock;
+			
 		end generate l2;
 	end generate l1;
 	
