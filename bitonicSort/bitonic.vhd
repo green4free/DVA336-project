@@ -73,11 +73,12 @@ begin
 						--Sart of arrow b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1) + n
 						--Length of arrow 2 ** (i - j)
 						swap: minMax generic map(dir => (b mod 2 /= 0) )
-									 port map(A => network((i * (i+1)) / 2 + j) (b * (2 ** (i + 1)) + m * (2 ** (i - j + 1)) + n ),
-												 B => network((i * (i+1)) / 2 + j) ((b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1)) + n) + 2**(i-j)),
-												nA => network((i * (i+1)) / 2 + j + 1) (b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1)) + n ),
-												nB => network((i * (i+1)) / 2 + j + 1) ((b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1)) + n) + 2**(i-j))
-											 );
+							port map(
+							A => network((i * (i+1)) / 2 + j) (b * (2 ** (i + 1)) + m * (2 ** (i - j + 1)) + n ),
+							B => network((i * (i+1)) / 2 + j) ((b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1)) + n) + 2**(i-j)),
+							nA => network((i * (i+1)) / 2 + j + 1) (b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1)) + n ),
+							nB => network((i * (i+1)) / 2 + j + 1) ((b * (2 ** (i + 1) ) + m * (2 ** (i - j + 1)) + n) + 2**(i-j))
+							);
 					end generate arrow;
 				end generate redBlock;
 				
