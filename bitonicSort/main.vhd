@@ -60,16 +60,20 @@ architecture Flow of main is
 	signal rst: std_logic;
 	signal output: list(2 ** size - 1 downto 0);
 	signal input: list(2 ** size downto 0);
-	signal count: integer := 0;
-	signal r_ready, t_ready, t_done, t_active, send : std_logic := '0';
+	signal countIn: unsigned(size downto 0);
+	signal countOut: unsigned(20 downto 0) := (others => '0');
+	signal r_ready, t_ready, t_done, t_active: std_logic := '0';
 	signal byteOut: unsigned(7 downto 0);
+	
+	type state is (R, W);
+	signal mode: state := R;
 begin
 	
 	rst <= not rst_n;
 	
-	led(5 downto 0) <= to_unsigned(count, 6);
-	led(7) <= send;
-	led(6) <= t_active;
+	led(size downto 0) <= countIn;
+	led(6 downto size + 1) <= (others => '0');
+	led(7) <= t_active;
 	
 	sort: bitonicSort generic map(logN => size)
 							   port map(unsorted => input(2 ** size downto 1), sorted => output);
@@ -83,42 +87,49 @@ begin
 									port map (i_Clk => clk, i_TX_DV => t_ready, i_TX_Byte => std_logic_vector(byteOut), o_TX_Active => t_active, o_TX_Serial => tx, o_TX_Done => t_done);
 	
 	
+
+	byteOut <= output(to_integer(countOut(20 downto 20 - size)));
 	
-	byteOut <= output(count mod (2 ** size));
+	t_ready <= countOut(20 - size - 1);
 	
-	
-	sendStatus: process(send, t_active)
-	begin
-		if t_active = '1' then
-			t_ready <= '0';
-		elsif send = '1' then
-			t_ready <= '1';
-		end if;
-	end process sendStatus;
-	
-	
-	counter: process(r_ready, count, rst)
+	counter: process(r_ready, clk, rst, mode, countIn, countOut)
 	begin
 		if (rst = '1') then
-			count <= 0;
-			send <= '0';
-		elsif (r_ready'EVENT and r_ready = '1') then
-			count <= (count + 1) mod (2**(size + 1));
-			if count >= (2 ** size)-1 then
-				send <= '1';
-			else
-				send <= '0';
-			end if;
+			countIn <= (others => '0');
+			countOut <= (others => '0');
+			mode <= R;
+		else 
+			case mode is
+				when R =>
+				if (r_ready'EVENT and r_ready = '1') then
+					countIn <= countIn + 1;
+				end if;
+				if countIn = to_unsigned(2**size- 1, size) then
+					mode <= W;
+					countIn <= (others => '0');
+				end if;
+				
+				when W =>
+				if clk'EVENT and clk = '1' then
+					if t_active = '0' then
+						countOut <= countOut + 1;
+					end if;
+					if countOut(20 downto 20 - size) = to_unsigned(2**size- 1, size) then
+						mode <= R;
+						countOut <= (others => '0');
+					end if;
+				end if;
+			end case;
 		end if;
 	end process counter;
+	
+		
 		
 	inputShift: for I in 1 to 2 ** size generate
 		process(r_ready)
 		begin
 			if (r_ready'EVENT and r_ready = '1') then
-				if count < (2 ** size) then
-					input(I) <= input(I-1);
-				end if;
+				input(I) <= input(I-1);
 			end if;
 		end process;
 	end generate inputShift;
