@@ -10,14 +10,15 @@ entity main is
 		clk: in STD_LOGIC;
 		rst_n: in STD_LOGIC;
 		tx: out STD_LOGIC;
-		rx: in  STD_LOGIC
+		rx: in  STD_LOGIC;
+		led: out unsigned(7 downto 0)
 	);
 end main;
 
 architecture Flow of main is
 
 
-	constant size: integer := 5;
+	constant size: integer := 3;
 
 	component bitonicSort is
 		generic(
@@ -57,18 +58,21 @@ architecture Flow of main is
 	end component;
 	
 	signal rst: std_logic;
-	signal tick: std_logic;
-	signal input, output, tmp: list(2 ** size - 1 downto 0);
-	signal count: unsigned(size downto 0) := (others => '0');
-	signal r_ready, t_ready, t_done, t_active : std_logic := '0';
-	signal byteIn, byteOut: unsigned(7 downto 0);
-	
+	signal output: list(2 ** size - 1 downto 0);
+	signal input: list(2 ** size downto 0);
+	signal count: integer := 0;
+	signal r_ready, t_ready, t_done, t_active, send : std_logic := '0';
+	signal byteOut: unsigned(7 downto 0);
 begin
 	
 	rst <= not rst_n;
 	
+	led(5 downto 0) <= to_unsigned(count, 6);
+	led(7) <= send;
+	led(6) <= t_active;
+	
 	sort: bitonicSort generic map(logN => size)
-							   port map(unsorted => input, sorted => tmp);
+							   port map(unsorted => input(2 ** size downto 1), sorted => output);
 	
 	
 	receiver: UART_RX generic map (g_CLKS_PER_BIT => 5208)
@@ -80,31 +84,41 @@ begin
 	
 	
 	
-	byteOut <= output(to_integer(count(size - 1 downto 0)));
+	byteOut <= output(count mod (2 ** size));
 	
 	
-	tick <= r_ready or t_done;
+	sendStatus: process(send, t_active)
+	begin
+		if t_active = '1' then
+			t_ready <= '0';
+		elsif send = '1' then
+			t_ready <= '1';
+		end if;
+	end process sendStatus;
 	
-	counter: process(tick, count, rst, tmp)
+	
+	counter: process(r_ready, count, rst)
 	begin
 		if (rst = '1') then
-			count <= (others => '0');
-		elsif (tick'EVENT and tick = '1') then
-			count <= count + 1;
-			if count(size) = '1' and t_active = '0' then
-				t_ready <= '1';
+			count <= 0;
+			send <= '0';
+		elsif (r_ready'EVENT and r_ready = '1') then
+			count <= (count + 1) mod (2**(size + 1));
+			if count >= (2 ** size)-1 then
+				send <= '1';
+			else
+				send <= '0';
 			end if;
-		end if;
-		if count(size - 1 downto 0) = to_unsigned(2 ** size - 1, size) then
-			output <= tmp;
 		end if;
 	end process counter;
 		
-	inputShift: for I in 1 to 2 ** size - 1 generate
+	inputShift: for I in 1 to 2 ** size generate
 		process(r_ready)
 		begin
 			if (r_ready'EVENT and r_ready = '1') then
-				input(I) <= input(I-1);
+				if count < (2 ** size) then
+					input(I) <= input(I-1);
+				end if;
 			end if;
 		end process;
 	end generate inputShift;
