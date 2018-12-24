@@ -18,8 +18,8 @@ end main;
 architecture Flow of main is
 
 
-	constant size: integer := 5;
-	constant top: integer := 28;
+	constant size: integer := 3;
+	constant top: integer := 24;
 
 	component bitonicSort is
 		generic(
@@ -66,9 +66,12 @@ architecture Flow of main is
 	signal rst, tick: std_logic;
 	signal output: list(2 ** size - 1 downto 0);
 	signal input: list(2 ** size - 1 downto 0);
+	signal tmp: list(2 ** size - 1 downto 0) := (others => (others => '0'));
+	
 	signal countOut: unsigned(top downto 0) := (others => '0');
-	signal countIn: unsigned(size - 1 downto 0) := (others => '0');
-	signal t_ready, t_done, t_active, r_done: std_logic;
+	signal countIn: unsigned(size downto 0) := (others => '0');
+	
+	signal t_ready, t_done, t_active, r_done, go: std_logic;
 	signal byteOut, byteIn: unsigned(7 downto 0);
 	signal w : std_logic := '0';
 begin
@@ -85,25 +88,31 @@ begin
 	
 	
 	sort: bitonicSort generic map(logN => size)
-							   port map(unsorted => input(2 ** size - 1 downto 0), sorted => output);
+							   port map(unsorted => tmp, sorted => output);
 	
 	
 	receiver: serial_rx generic map (CLK_PER_BIT => 5208)
 							  port map (clk => clk, rst => rst, rx => rx, unsigned(data) => byteIn, new_data => r_done);
 	
 	
+	
+	go <= t_ready and w;
 	transmitter: serial_tx generic map (CLK_PER_BIT => 5208)
-								  port map (clk => clk, rst => rst, tx => tx, b => '0', busy => t_active, data => std_logic_vector(byteOut), new_data => t_ready and w);
+								  port map (clk => clk, rst => rst, tx => tx, b => '0', busy => t_active, data => std_logic_vector(byteOut), new_data => go);
 	
 	
 	
-	byteOut <= output(to_integer(countOut(top downto top - size - 1)));
-	
+	byteOut <= output(to_integer(countOut(top - 1 downto top - size)));
 	input(to_integer(countIn)) <= byteIn;
+	
+	
+	--led(3 downto 0) <= countIn(3 downto 0);
+	--led(7 downto 4) <= countOut(top - 1 downto top - size);
+	
 	
 	led <= byteOut;
 	
-	tick <= countOut(top - size - 2);
+	tick <= countOut(top - size - 1);
 	process(tick, w, t_active)
 	begin
 		if t_active = '1' then
@@ -120,32 +129,32 @@ begin
 		if rst = '1' then
 			countOut <= (others => '0');
 			countIn <= (others => '0');
+			tmp <= (others => (others => '0'));
 			w <= '0';
 		else
-			case w is
-				when '1' =>
-					if countOut(top downto top - size - 1) = to_unsigned(2 ** size - 1, size) then
-						w <= '0';
-						countIn <= (others => '0');
-					elsif clk'EVENT and clk = '1' then
-						countOut <= countOut + 1;
-					end if;
-					
-				when '0' =>
-					if countIn = to_unsigned(2 ** size - 1, size) then
-						w <= '1';
-						countOut <= (others => '0');
-					elsif r_done'EVENT and r_done = '1' then
-						countIn <= countIn + 1;
-					end if;
-				
-				when others => report "unreachable" severity failure;
-			end case;
+			if countOut(top downto top - size) = to_unsigned(2 ** size, size + 1) then
+				w <= '0';
+				countOut <= (others => '0');
+				tmp <= (others => (others => '0'));
+			elsif countIn = to_unsigned(2 ** size - 1, size) then
+				tmp <= input;
+				if (output(2 ** size - 1) /= to_unsigned(0, 8)) and (output(0) /= to_unsigned(0, 8)) then
+					w <= '1';
+					countIn <= (others => '0');
+				end if;
+			end if;
+			
+			if clk'EVENT and clk = '1' then
+				countOut <= countOut + unsigned'('0' & w);
+			end if;
+
+			if r_done'EVENT and r_done = '1' then
+				countIn <= countIn + unsigned'('0' & (not w));
+			end if;
+			
 		end if;
 	end process count;
-	
-	
-	
+		
 	
 
 end Flow;
