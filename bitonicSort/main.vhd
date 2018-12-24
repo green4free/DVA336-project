@@ -10,16 +10,16 @@ entity main is
 		clk: in STD_LOGIC;
 		rst_n: in STD_LOGIC;
 		rx: in STD_LOGIC;
-		tx: out STD_LOGIC;
-		led: out unsigned(7 downto 0)
+		tx: out STD_LOGIC
 	);
 end main;
 
 architecture Flow of main is
 
 
-	constant size: integer := 3;
-	constant top: integer := 24;
+
+	constant size: integer := 4;
+	constant top: integer := 27;
 
 	component bitonicSort is
 		generic(
@@ -70,8 +70,8 @@ architecture Flow of main is
 	
 	signal countOut: unsigned(top downto 0) := (others => '0');
 	signal countIn: unsigned(size downto 0) := (others => '0');
-	
-	signal t_ready, t_done, t_active, r_done, go: std_logic;
+
+	signal t_ready, t_ready_p, t_ready_pp, t_done, t_active, r_done, go: std_logic;
 	signal byteOut, byteIn: unsigned(7 downto 0);
 	signal w : std_logic := '0';
 begin
@@ -96,7 +96,7 @@ begin
 	
 	
 	
-	go <= t_ready and w;
+	go <= t_ready_pp and w;
 	transmitter: serial_tx generic map (CLK_PER_BIT => 5208)
 								  port map (clk => clk, rst => rst, tx => tx, b => '0', busy => t_active, data => std_logic_vector(byteOut), new_data => go);
 	
@@ -109,9 +109,6 @@ begin
 	--led(3 downto 0) <= countIn(3 downto 0);
 	--led(7 downto 4) <= countOut(top - 1 downto top - size);
 	
-	
-	led <= byteOut;
-	
 	tick <= countOut(top - size - 1);
 	process(tick, w, t_active)
 	begin
@@ -123,8 +120,18 @@ begin
 	end process;
 	
 
+	process(clk, rst)
+	begin
+		if rst = '1' then
+			t_ready_p <= '0';
+			t_ready_pp <= '0';
+		elsif clk'EVENT and clk = '1' then
+			t_ready_p <= t_ready;
+			t_ready_pp <= t_ready_p;
+		end if;
+	end process;
 	
-	count: process (clk, countOut, countIn, r_done, rst)
+	count: process (clk, countOut, countIn, r_done, rst, input, output)
 	begin
 		if rst = '1' then
 			countOut <= (others => '0');

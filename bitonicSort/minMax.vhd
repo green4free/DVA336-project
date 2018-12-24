@@ -15,21 +15,21 @@ entity minMax is
 end minMax;
 
 architecture Behavioral of minMax is
-signal comp : unsigned(7 downto 0);
+signal comp : boolean;
 begin
 	max:if dir generate
-		comp <= (B - A);
+		comp <= A > B;
 	end generate max;
 	min:if not dir generate
-		comp <= (A - B);
+		comp <= B > A;
 	end generate min;
 
 
 	nA <=
-		A when comp(7) = '1' else
+		A when comp else
 		B;
 	nB <= 
-		B when comp(7) = '1' else
+		B when comp else
 		A;
 	
 	
