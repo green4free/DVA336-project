@@ -1,0 +1,12 @@
+#-----------------------------------------------------------
+# Webtalk v2018.3 (64-bit)
+# SW Build 2405991 on Thu Dec  6 23:36:41 MST 2018
+# 
+# Start of session at: Tue Feb 19 17:38:14 2019
+# Process ID: 23329
+# Current directory: /home/magnus/Documents/xilinx/newProjectDir/sort/baseProject/baseProject.sdk/webtalk
+# Command line: wbtcv -mode batch -source sdk_webtalk.tcl
+# Log file: /home/magnus/Documents/xilinx/newProjectDir/sort/baseProject/baseProject.sdk/webtalk/webtalk.log
+# Journal file: /home/magnus/Documents/xilinx/newProjectDir/sort/baseProject/baseProject.sdk/webtalk/webtalk.jou
+#-----------------------------------------------------------
+source sdk_webtalk.tcl
