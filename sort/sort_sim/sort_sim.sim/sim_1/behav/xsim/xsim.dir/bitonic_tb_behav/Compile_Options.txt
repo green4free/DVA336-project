@@ -1,0 +1,1 @@
+-wto "25902e73513d4efba6cbaa6c90b9bfb3" --incr --debug "typical" --relax --mt "8" -L "xil_defaultlib" -L "secureip" --snapshot "bitonic_tb_behav" "xil_defaultlib.bitonic_tb" -log "elaborate.log" 
