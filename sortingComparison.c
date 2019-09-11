@@ -69,7 +69,8 @@ int main(int argc, char *argv[])
 	page_offset = gpio_addr - page_addr;
 	ptr = mmap(NULL, page_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, page_addr);
 
-    for (; iterations > 0; --iterations) {
+	int it = iterations;
+    for (; it > 0; --it) {
 
         
         for (unsigned i = 0; i < N_SIZE; ++i)
@@ -84,15 +85,15 @@ int main(int argc, char *argv[])
     	time_hw += get_wclock();
 
 		//Software sorting uisng GCC qsort
-        time_sw -= get_wclock();
+       
+		time_sw -= get_wclock();
         qsort(unsorted, N_SIZE , sizeof(byte), compare); 
         time_sw += get_wclock();
-
 		
 		//Compare the two sorted arrays
         int same = 1;
         for (unsigned i = 0; i < N_SIZE ; ++i)
-            same = same && (unsorted[i] == sorted_hw[i]);
+			same = same && (unsorted[i] == sorted_hw[i]);
 
 
         if (!same) {
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
 	    return -1;
         }
 
+
     }
 
 
@@ -110,7 +112,7 @@ int main(int argc, char *argv[])
 	munmap(ptr, page_size);
 
 
-    printf("Hardware average time: %f microseconds.\nSoftware average time: %f microseconds.\n", time_hw / (double)iterations, time_sw / (double)iterations);
+    //printf("Hardware average time: %f microseconds.\nSoftware average time: %f microseconds.\n", time_hw / (double)iterations, time_sw / (double)iterations);
 
 	return 0;
 }
